@@ -13,12 +13,17 @@ cancel-on-damage: true
 
 # Titles. {time} = seconds left, {bar} = the void bar character.
 # Colors with & codes.
-title-tick: "&d&l{time}"
-subtitle-tick: "&5✦ Teleporting ✦ &r{bar}"
-title-go: "&b&lGO"
-subtitle-go: "&3✦ Into the void ✦ &r{bar}"
-title-cancel: "&c&lCancelled"
-subtitle-cancel: "&4You moved &r{bar}"
+# The big title is left blank (vanilla titles are huge) - everything is on the smaller subtitle line.
+title-tick: " "
+subtitle-tick: "&5✦ &d&l{time} &5✦ &r{bar}"
+title-go: " "
+subtitle-go: "&3✦ &b&lWARP &3✦ &r{bar}"
+title-cancel: " "
+subtitle-cancel: "&4✦ &c&lCancelled &4✦ &r{bar}"
+
+# Fast-travel animation during the last second
+warp-animation: true      # particle spiral, bar flicker, teleport burst
+warp-effects: true        # short screen wobble + darkness pulse
 
 # Chat messages ("" to disable)
 msg-already: "&cYou are already teleporting!"
@@ -27,5 +32,6 @@ msg-player-only: "&cPlayers only."
 
 # Sounds (Bukkit Sound names, "" to disable)
 sound-tick: "BLOCK_NOTE_BLOCK_BASS"
+sound-warp: "BLOCK_PORTAL_TRAVEL"
 sound-go: "ENTITY_ENDERMAN_TELEPORT"
 sound-cancel: "BLOCK_ANVIL_LAND"

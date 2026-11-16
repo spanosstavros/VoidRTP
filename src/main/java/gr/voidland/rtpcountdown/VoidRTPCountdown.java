@@ -3,6 +3,7 @@ package gr.voidland.rtpcountdown;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,6 +14,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
@@ -32,6 +35,7 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
         final String world;
         int left;
         BukkitTask task;
+        BukkitTask warp;
 
         Session(Location start, String world, int left) {
             this.start = start;
@@ -92,11 +96,17 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
                 char bar = BAR[Math.min(5, 5 - fill)];
                 show(player, "title-tick", "subtitle-tick", s.left, bar, 0, 25, 0);
                 play(player, "sound-tick", 0.8f, 0.6f + 0.1f * (total - s.left));
+                if (s.left == 1 && getConfig().getBoolean("warp-animation", true)) {
+                    startWarp(player, s);
+                }
                 s.left--;
             } else {
                 end(player.getUniqueId());
                 show(player, "title-go", "subtitle-go", 0, BAR_GO, 0, 30, 10);
                 play(player, "sound-go", 1f, 1f);
+                if (getConfig().getBoolean("warp-animation", true)) {
+                    burst(player.getLocation().add(0, 1, 0), Particle.REVERSE_PORTAL, 120);
+                }
                 runTeleport(player, s.world);
             }
         }, 0L, 20L);
@@ -118,11 +128,14 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
     private void end(UUID id) {
         Session s = sessions.remove(id);
         if (s != null && s.task != null) s.task.cancel();
+        if (s != null && s.warp != null) s.warp.cancel();
     }
 
     private void cancel(Player player) {
         if (!sessions.containsKey(player.getUniqueId())) return;
         end(player.getUniqueId());
+        player.removePotionEffect(PotionEffectType.NAUSEA);
+        player.removePotionEffect(PotionEffectType.DARKNESS);
         show(player, "title-cancel", "subtitle-cancel", 0, BAR_CANCEL, 0, 40, 10);
         play(player, "sound-cancel", 1f, 1f);
     }
@@ -148,6 +161,55 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         end(e.getPlayer().getUniqueId());
+    }
+
+    // ---------- warp animation (last second) ----------
+
+    private void startWarp(Player player, Session s) {
+        if (getConfig().getBoolean("warp-effects", true)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 30, 0, false, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 50, 0, false, false, false));
+        }
+        play(player, "sound-warp", 0.5f, 1.2f);
+
+        s.warp = Bukkit.getScheduler().runTaskTimer(this, new Runnable() {
+            int t = 0;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || !sessions.containsKey(player.getUniqueId()) || t >= 20) {
+                    if (s.warp != null) s.warp.cancel();
+                    return;
+                }
+                Location base = player.getLocation();
+                double angle = t * 0.55;
+                double radius = 1.3 - t * 0.05;
+                double y = 0.1 + t * 0.1;
+                for (int k = 0; k < 2; k++) {
+                    double a = angle + k * Math.PI;
+                    double x = base.getX() + Math.cos(a) * radius;
+                    double z = base.getZ() + Math.sin(a) * radius;
+                    double yy = base.getY() + y;
+                    base.getWorld().spawnParticle(Particle.END_ROD, x, yy, z, 1, 0, 0, 0, 0);
+                    base.getWorld().spawnParticle(Particle.PORTAL, x, yy, z, 6, 0.1, 0.1, 0.1, 0.2);
+                }
+                // flicker the bar between purple (1 segment) and cyan
+                if (t > 0 && t % 4 == 0) {
+                    char bar = (t / 4) % 2 == 0 ? BAR[4] : BAR_GO;
+                    show(player, "title-tick", "subtitle-tick", 1, bar, 0, 6, 0);
+                }
+                if (t == 19) {
+                    burst(base.clone().add(0, 1, 0), Particle.PORTAL, 80);
+                }
+                t++;
+            }
+        }, 0L, 1L);
+    }
+
+    private void burst(Location loc, Particle type, int count) {
+        if (loc.getWorld() == null) return;
+        loc.getWorld().spawnParticle(type, loc, count, 0.3, 0.7, 0.3, 0.8);
+        loc.getWorld().spawnParticle(Particle.END_ROD, loc, count / 4, 0.3, 0.7, 0.3, 0.15);
     }
 
     // ---------- helpers ----------
