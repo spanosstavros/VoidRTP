@@ -11,6 +11,9 @@ teleport-as: player
 cancel-on-move: true
 cancel-on-damage: true
 
+# Where the countdown shows: "actionbar" (above the hearts/hotbar) or "subtitle" (center of screen)
+display: actionbar
+
 # Titles. {time} = seconds left, {bar} = the void bar character.
 # Colors with & codes.
 # The big title is left blank (vanilla titles are huge) - everything is on the smaller subtitle line.
@@ -20,6 +23,10 @@ title-go: " "
 subtitle-go: "&3✦ &b&lWARP &3✦ &r{bar}"
 title-cancel: " "
 subtitle-cancel: "&4✦ &c&lCancelled &4✦ &r{bar}"
+
+# A couple of purple specks on the ground at the player's feet while counting down
+ground-particles: true
+ground-particle-color: "#AA1EFF"
 
 # Fast-travel animation during the last second
 warp-animation: true      # particle spiral, bar flicker, teleport burst

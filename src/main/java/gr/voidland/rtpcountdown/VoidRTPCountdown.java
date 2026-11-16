@@ -1,7 +1,10 @@
 package gr.voidland.rtpcountdown;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -21,6 +24,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class VoidRTPCountdown extends JavaPlugin implements Listener {
 
@@ -36,6 +40,7 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
         int left;
         BukkitTask task;
         BukkitTask warp;
+        BukkitTask ground;
 
         Session(Location start, String world, int left) {
             this.start = start;
@@ -111,6 +116,10 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
             }
         }, 0L, 20L);
 
+        if (getConfig().getBoolean("ground-particles", true)) {
+            startGround(player, s);
+        }
+
         return true;
     }
 
@@ -129,6 +138,7 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
         Session s = sessions.remove(id);
         if (s != null && s.task != null) s.task.cancel();
         if (s != null && s.warp != null) s.warp.cancel();
+        if (s != null && s.ground != null) s.ground.cancel();
     }
 
     private void cancel(Player player) {
@@ -161,6 +171,35 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         end(e.getPlayer().getUniqueId());
+    }
+
+    // ---------- ground particles (a couple of purple specks at the feet) ----------
+
+    private void startGround(Player player, Session s) {
+        Color color = parseColor(getConfig().getString("ground-particle-color", "#AA1EFF"));
+        Particle.DustOptions dust = new Particle.DustOptions(color, 1.0f);
+        s.ground = Bukkit.getScheduler().runTaskTimer(this, () -> {
+            if (!player.isOnline() || !sessions.containsKey(player.getUniqueId())) return;
+            Location l = player.getLocation();
+            if (l.getWorld() == null) return;
+            ThreadLocalRandom r = ThreadLocalRandom.current();
+            for (int i = 0; i < 2; i++) {
+                double a = r.nextDouble(Math.PI * 2);
+                double d = 0.3 + r.nextDouble() * 0.5;
+                l.getWorld().spawnParticle(Particle.DUST,
+                        l.getX() + Math.cos(a) * d, l.getY() + 0.05, l.getZ() + Math.sin(a) * d,
+                        1, 0, 0, 0, 0, dust);
+            }
+        }, 0L, 4L);
+    }
+
+    private static Color parseColor(String hex) {
+        try {
+            String h = hex.startsWith("#") ? hex.substring(1) : hex;
+            return Color.fromRGB(Integer.parseInt(h, 16));
+        } catch (Exception e) {
+            return Color.fromRGB(0xAA1EFF);
+        }
     }
 
     // ---------- warp animation (last second) ----------
@@ -220,7 +259,11 @@ public final class VoidRTPCountdown extends JavaPlugin implements Listener {
                 .replace("{time}", String.valueOf(time)).replace("{bar}", String.valueOf(bar)));
         String s = color(getConfig().getString(subKey, "")
                 .replace("{time}", String.valueOf(time)).replace("{bar}", String.valueOf(bar)));
-        p.sendTitle(t, s, in, stay, out);
+        if ("actionbar".equalsIgnoreCase(getConfig().getString("display", "actionbar"))) {
+            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(s));
+        } else {
+            p.sendTitle(t, s, in, stay, out);
+        }
     }
 
     private void play(Player p, String key, float vol, float pitch) {
