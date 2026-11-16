@@ -1,0 +1,31 @@
+# Seconds of countdown (the bar always has 5 segments and scales to this)
+countdown-seconds: 5
+
+# What runs when the countdown ends. {player} and {world} are replaced.
+# "player" = the player runs it (same as your DeluxeMenus command),
+# "console" = the console runs it.
+teleport-command: "rtp world {world}"
+teleport-as: player
+
+# Cancel conditions
+cancel-on-move: true
+cancel-on-damage: true
+
+# Titles. {time} = seconds left, {bar} = the void bar character.
+# Colors with & codes.
+title-tick: "&d&l{time}"
+subtitle-tick: "&5✦ Teleporting ✦ &r{bar}"
+title-go: "&b&lGO"
+subtitle-go: "&3✦ Into the void ✦ &r{bar}"
+title-cancel: "&c&lCancelled"
+subtitle-cancel: "&4You moved &r{bar}"
+
+# Chat messages ("" to disable)
+msg-already: "&cYou are already teleporting!"
+msg-no-world: "&cUsage: /voidrtp <world>"
+msg-player-only: "&cPlayers only."
+
+# Sounds (Bukkit Sound names, "" to disable)
+sound-tick: "BLOCK_NOTE_BLOCK_BASS"
+sound-go: "ENTITY_ENDERMAN_TELEPORT"
+sound-cancel: "BLOCK_ANVIL_LAND"

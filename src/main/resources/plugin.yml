@@ -1,0 +1,16 @@
+name: VoidRTPCountdown
+main: gr.voidland.rtpcountdown.VoidRTPCountdown
+version: 1.0.0
+api-version: '1.20'
+description: Void themed 5 second countdown (title + bar) before RTP
+commands:
+  voidrtp:
+    description: Start the void RTP countdown
+    usage: /voidrtp <world>
+    permission: voidrtp.use
+permissions:
+  voidrtp.use:
+    default: true
+  voidrtp.bypass:
+    description: Skip the countdown
+    default: op
